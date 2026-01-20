@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Absolute Logic Check Tool (Middle Reel Fixed)</title>
+    <title>Versus Revise - Absolute Logic Check Tool (Middle Reel Final)</title>
     <style>
         html, body { 
             width: 100%; height: 100%; margin: 0; padding: 0; 
@@ -11,7 +11,6 @@
             overflow: hidden; display: flex; flex-direction: column;
         }
         
-        /* 状態タブエリア */
         .state-tabs { 
             display: flex; width: 100%; height: 60px; flex-shrink: 0; border-bottom: 2px solid #333;
         }
@@ -30,12 +29,10 @@
         #tab-seven_flag { background: #8b0000; color: #fff; }
         #tab-bar_flag { background: #333; color: #ccc; }
 
-        /* メインコンテンツ（左右分割） */
         .main-content { 
             flex: 1; display: flex; flex-direction: row; overflow: hidden; padding: 5px; gap: 5px; background: #121212;
         }
         
-        /* 左側：結果一覧 */
         .result-area { 
             flex: 1; background: #000; border: 1px solid #333; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column;
         }
@@ -55,9 +52,8 @@
         .c-bell   { background: #665500; color: #ffff00; }
         .c-suika  { background: #004400; color: #00ff00; }
         .c-cher   { background: #cc0000; color: #ffffff; } /* 鮮やかな赤 */
-        .c-tok    { background: #800080; color: #ffccff; } /* 紫背景・薄紫文字 */
+        .c-tok    { background: #800080; color: #ffccff; } /* 紫 */
 
-        /* 右側：リール */
         .reel-frame { 
             width: 100px; height: 490px; background: #000; border: 2px solid #444; border-radius: 4px; overflow: hidden; position: relative; flex-shrink: 0; cursor: grab; touch-action: none;
         }
@@ -69,7 +65,6 @@
         }
         .symbol-image { flex: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
         
-        /* 赤枠（3コマ分） */
         .guide-box { 
             position: absolute; right: 0; width: calc(100% - 25px); height: 210px; top: 140px; pointer-events: none; z-index: 10; box-sizing: border-box; border: 4px solid #ff0000; background: rgba(255, 0, 0, 0.1); box-shadow: inset 0 0 10px rgba(255,0,0,0.5);
         }
@@ -92,8 +87,8 @@
 
 <script>
 // --- [データ部] ---
-// 提供された中リール用データ（上から21, 20...1）を定義
-// 後ほどプログラムで .reverse() をかけ、内部ロジック（0=1番, 20=21番）に合わせます。
+// 中リール用データ: 上から21番, 20番... 1番の順で定義
+// ロジックは「File4(正解)」を使用するため、データの加工(Reverse等)は一切行いません。
 
 const MASTER_DATA = {
     // 1. ボーナス未成立 (中リール)
@@ -166,15 +161,6 @@ const MASTER_DATA = {
     }
 };
 
-// 【重要】データの並びを反転させて整合性を取る
-for (const state in MASTER_DATA) {
-    for (const key in MASTER_DATA[state]) {
-        if (Array.isArray(MASTER_DATA[state][key])) {
-            MASTER_DATA[state][key].reverse();
-        }
-    }
-}
-
 const FLAGS = [
     {k:"hz",n:"ハズレ",c:"hazure"},{k:"nr",n:"通常リプ",c:"rep"},{k:"jr",n:"JACリプ",c:"rep"},{k:"rr",n:"RTリプ",c:"rep"},
     {k:"ba",n:"ベルＡ",c:"bell"},{k:"bb",n:"ベルＢ",c:"bell"},{k:"sa",n:"スイカＡ",c:"suika"},{k:"sb",n:"スイカＢ",c:"suika"},
@@ -195,8 +181,11 @@ function buildStaticTable() {
             const data = MASTER_DATA[state][f.k];
             data.forEach((slip, pushIdx) => {
                 if (slip === null) return;
-                // インデックスとスベリ計算（補正なし）
+                
+                // 【復旧】File4の正解ロジック：停止位置 = 押下位置 - スベリ
+                // これで正しく下に滑ります。
                 let stopIdx = mod(pushIdx - slip, REEL_LEN);
+                
                 if (!solvedTable[state][stopIdx][f.k]) solvedTable[state][stopIdx][f.k] = [];
                 solvedTable[state][stopIdx][f.k].push(slip);
             });
@@ -236,7 +225,7 @@ function update() {
 function init() {
     buildStaticTable();
     const win = document.getElementById('reel-window');
-    // リール生成（3周分）
+    // リール生成
     for (let l = 0; l < 3; l++) {
         for (let i = 0; i < REEL_LEN; i++) {
             const n = 21 - i;
