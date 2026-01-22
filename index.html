@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Versus Revise - Absolute Table Checker</title>
+    <title>Versus Revise - Middle Perfect Checker</title>
     <style>
+        /* UIと配色設定（右リール版準拠を完全維持） */
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; display: flex; flex-direction: column; }
         .state-tabs { display: flex; width: 100%; height: 60px; flex-shrink: 0; border-bottom: 2px solid #333; }
         .state-tab { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; cursor: pointer; border-right: 1px solid #222; opacity: 0.6; transition: 0.2s; text-align: center; }
@@ -27,7 +28,7 @@
         .reel-frame { width: 100px; height: 490px; background: #000; border: 2px solid #444; border-radius: 4px; overflow: hidden; position: relative; flex-shrink: 0; cursor: grab; touch-action: none; }
         #reel-window { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; }
         .symbol { height: 70px; display: flex; border-bottom: 1px solid #222; width: 100%; box-sizing: border-box; }
-        .index-num { width: 25px; color: #d4af37; background: #111; text-align: center; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border-right: 1 solid #333; }
+        .index-num { width: 25px; color: #d4af37; background: #111; text-align: center; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border-right: 1px solid #333; }
         .symbol-image { flex: 1; height: 100%; background-image: url('reel.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
         .guide-box { position: absolute; right: 0; width: calc(100% - 25px); height: 210px; top: 140px; pointer-events: none; z-index: 10; border: 4px solid #ff0000; background: rgba(255, 0, 0, 0.1); }
     </style>
@@ -55,21 +56,20 @@ const MASTER_DATA = {
     },
     x_flag: {
         hz: [0,3,2,1,1,2,1,4,0,4,2,1,0,0,0,1,2,3,4,4,1], nr: [1,2,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,4,0], jr: [1,2,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,4,0], rr: [1,2,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,4,0],
-        ba: [0,2,0,1,1,2,3,4,0,1,2,3,0,0,0,3,0,1,2,3,4], bb: [0,2,0,1,1,2,3,4,0,1,2,3,0,0,0,3,0,1,2,3,4], sa: [2,3,4,2,0,0,1,2,2,4,4,1,2,0,0,2,3,0,1,2,1], sb: [2,3,4,2,0,0,1,2,2,4,4,1,2,0,0,2,3,0,1,2,1],
-        ca: [2,0,1,2,0,1,0,1,2,3,0,1,2,3,4,1,2,3,4,0,1], cb: [2,0,1,2,0,1,0,1,2,3,0,1,2,3,4,1,2,3,4,0,1], ta: [2,4,4,2,0,1,0,3,4,4,4,2,2,0,0,0,3,4,4,4,1], tb: [2,0,0,2,0,0,0,1,2,2,3,4,2,0,0,0,3,4,4,4,1], tc: [2,4,4,2,0,1,0,3,4,2,3,4,4,2,2,0,3,4,4,4,1], td: [1,0,1,1,0,0,0,1,1,3,3,4,2,0,0,2,1,2,3,4,3], te: [2,0,0,2,0,1,0,3,4,0,1,2,2,0,0,0,3,4,4,4,1]
+        ba: [0,0,0,0,1,2,2,2,2,2,2,2,2,1,1,0,3,4,4,4,1].slice(0,21), bb: [0,0,0,0,1,2,2,2,2,2,2,2,2,1,1,0,3,4,4,4,1].slice(0,21), sa: [2,3,4,2,1,1,1,2,2,4,4,4,1,2,2,1,0,0,3,4,1].slice(0,21), sb: [2,3,4,2,1,1,1,2,2,4,4,4,1,2,2,1,0,0,3,4,1].slice(0,21),
+        ca: [2,3,2,2,1,1,1,2,2,4,4,4,4,2,4,2,4,2,4,3,4].slice(0,21), cb: [2,3,2,2,1,1,1,2,2,4,4,4,4,2,4,2,4,2,4,3,4].slice(0,21), ta: [2,4,4,2,0,1,0,3,4,4,4,2,2,0,0,0,3,4,4,4,1], tb: [2,0,0,2,0,0,0,1,2,2,3,4,2,0,0,0,3,4,4,4,1], tc: [2,4,4,2,0,1,0,3,4,2,3,4,4,2,2,0,3,4,4,4,1], td: [1,0,1,1,0,0,0,1,1,3,3,4,2,0,0,2,1,2,3,4,3], te: [2,0,0,2,0,1,0,3,4,0,1,2,2,0,0,0,3,4,4,4,1]
     },
     seven_flag: {
         hz: [3,0,1,2,3,0,0,2,2,3,4,4,2,3,4,2,3,4,0,1,2], nr: [1,2,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,4,0], jr: [1,2,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,4,0], rr: [1,2,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,4,0],
-        ba: [2,3,4,2,3,0,0,2,2,4,4,4,2,2,2,1,2,2,0,4,1], bb: [2,3,4,2,3,0,0,2,2,4,4,4,2,2,2,1,2,2,0,4,1], sa: [2,3,4,2,0,0,0,1,2,3,4,4,2,0,0,2,3,0,1,2,1], sb: [2,3,4,2,0,0,0,1,2,3,4,4,2,0,0,2,3,0,1,2,1],
-        ca: [2,0,1,2,0,0,0,1,2,3,0,1,2,3,4,1,2,3,4,0,1], cb: [2,0,1,2,0,0,0,1,2,3,0,1,2,3,4,1,2,3,4,0,1], ta: [2,4,4,2,0,0,0,1,2,4,4,4,2,0,0,0,3,4,0,4,1], tb: [4,2,1,2,2,0,0,0,2,2,3,4,1,0,1,0,3,2,3,4,0], tc: [2,4,4,0,0,0,0,1,2,2,3,4,2,2,2,0,3,4,0,4,1], td: [2,0,0,0,0,0,0,1,2,2,3,4,2,4,4,0,3,4,0,4,1], te: [2,0,0,2,0,0,0,1,2,2,3,4,2,0,0,0,3,4,4,4,1]
+        ba: [3,4,4,2,1,1,1,2,2,2,2,2,2,2,0,2,0,0,0,4,2].slice(0,21), bb: [3,4,4,2,1,1,1,2,2,2,2,2,2,2,0,2,0,0,0,4,2].slice(0,21), sa: [2,3,4,2,1,1,1,1,2,3,4,4,2,0,0,2,3,0,1,2,1].slice(0,21), sb: [2,3,4,2,1,1,1,1,2,3,4,4,2,0,0,2,3,0,1,2,1].slice(0,21),
+        ca: [2,3,1,2,2,2,2,2,1,2,3,3,4,1,2,2,0,1,0,4,2].slice(0,21), cb: [2,3,1,2,2,2,2,2,1,2,3,3,4,1,2,2,0,1,0,4,2].slice(0,21), ta: [2,4,4,2,0,0,0,1,2,4,4,4,2,0,0,0,3,4,0,4,1], tb: [4,2,1,2,2,0,0,0,2,2,3,4,1,0,1,0,3,2,3,4,0], tc: [2,4,4,0,0,0,0,1,2,2,3,4,2,2,2,0,3,4,0,4,1], td: [2,0,0,0,0,0,0,1,2,2,3,4,2,4,4,0,3,4,0,4,1], te: [2,0,0,2,0,0,0,1,2,2,3,4,2,0,0,0,3,4,4,4,1]
     },
     bar_flag: {
         hz: [1,0,1,2,3,0,0,1,2,3,0,1,2,3,4,2,1,4,3,0,1], nr: [1,2,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,4,0], jr: [1,2,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,4,0], rr: [1,2,0,1,2,3,4,0,1,2,3,0,1,2,3,0,1,2,3,4,0],
-        ba: [2,3,4,2,3,0,0,1,2,3,3,4,2,3,4,1,2,2,3,0,1], bb: [2,3,4,2,3,0,0,1,2,3,3,4,2,3,4,1,2,2,3,0,1], sa: [2,3,4,1,0,0,0,1,2,3,4,1,2,3,4,2,1,0,1,0,1], sb: [2,3,4,1,0,0,0,1,2,3,4,1,2,3,4,2,1,0,1,0,1],
+        ba: [1,1,1,1,0,0,0,3,3,2,2,2,2,2,2,2,1,4,4,2,2].slice(0,21), bb: [1,1,1,1,0,0,0,3,3,2,2,2,2,2,2,2,1,4,4,2,2].slice(0,21), sa: [1,1,1,1,0,0,0,3,3,2,2,2,2,2,2,2,1,4,4,2,2].slice(0,21), sb: [1,1,1,1,0,0,0,3,3,2,2,2,2,2,2,2,1,4,4,2,2].slice(0,21),
         ca: [2,2,0,2,2,0,0,1,2,3,0,1,2,2,2,0,3,2,3,4,1], cb: [2,2,0,2,2,0,0,1,2,3,0,1,2,2,2,0,3,2,3,4,1], ta: [2,3,4,1,0,0,1,1,2,4,4,4,2,0,1,0,3,2,3,0,1], tb: [2,3,4,1,2,0,1,1,2,2,3,4,2,0,1,0,3,2,3,4,1], tc: [2,3,4,1,0,0,1,1,2,2,3,4,2,0,1,0,3,2,3,0,1], td: [2,3,4,1,2,0,1,1,2,2,3,4,2,3,4,0,3,2,3,0,1], te: [2,3,4,1,0,0,1,1,2,2,3,4,2,0,1,0,3,2,3,4,1]
     }
 };
-
 const FLAGS = [ {k:"hz",n:"ハズレ",c:"hazure"},{k:"nr",n:"通常リプ",c:"rep"},{k:"jr",n:"JACリプ",c:"rep"},{k:"rr",n:"RTリプ",c:"rep"},{k:"ba",n:"ベルＡ",c:"bell"},{k:"bb",n:"ベルＢ",c:"bell"},{k:"sa",n:"スイカＡ",c:"suika"},{k:"sb",n:"スイカＢ",c:"suika"},{k:"ca",n:"チェリＡ",c:"cher"},{k:"cb",n:"チェリＢ",c:"cher"},{k:"ta",n:"特役Ａ",c:"tok"},{k:"tb",n:"特役Ｂ",c:"tok"},{k:"tc",n:"特役Ｃ",c:"tok"},{k:"td",n:"特役Ｄ",c:"tok"},{k:"te",n:"特役Ｅ",c:"tok"} ];
 let solvedTable = {}; let currentBottomIdx = 0; let currentState = 'hazure';
 function build() {
@@ -86,12 +86,14 @@ function build() {
         });
     }
 }
-function update() {
+function updateList() {
     const list = document.getElementById('flag-list'); list.innerHTML = '';
     const items = solvedTable[currentState][currentBottomIdx];
     if (items) {
         FLAGS.forEach(f => { if (items[f.k]) { const slips = [...new Set(items[f.k])].sort((a,b)=>b-a); const row = document.createElement('div'); row.className = `flag-item c-${f.c}`; row.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${slips.map(s=>`[${s}]`).join('')}</div>`; list.appendChild(row); } });
     }
+}
+function updateReel() {
     const win = document.getElementById('reel-window'); win.style.transform = `translate3d(0, -${((currentBottomIdx - 2) % 21 + 21) % 21 * 70 + 1470}px, 0)`;
 }
 function init() {
@@ -99,13 +101,13 @@ function init() {
     for (let l = 0; l < 3; l++) { for (let i = 0; i < 21; i++) { const n = 21 - i; win.innerHTML += `<div class="symbol"><div class="index-num">${n}</div><div class="symbol-image" style="background-position:0% ${(21-n)*5}%"></div></div>`; } }
     const area = document.getElementById('reel-touch-area'); let isD = false, sy = 0, si = 0;
     const st = (y) => { isD = true; sy = y; si = currentBottomIdx; };
-    const mv = (y) => { if (!isD) return; currentBottomIdx = (((si - Math.round((y - sy) / 70)) % 21) + 21) % 21; update(); };
+    const mv = (y) => { if (!isD) return; currentBottomIdx = (((si - Math.round((y - sy) / 70)) % 21) + 21) % 21; updateList(); updateReel(); };
     area.onmousedown = e => st(e.pageY); window.onmousemove = e => mv(e.pageY); window.onmouseup = () => isD = false;
     area.ontouchstart = e => { st(e.touches[0].pageY); e.preventDefault(); };
     area.ontouchmove = e => { mv(e.touches[0].pageY); e.preventDefault(); };
-    update();
+    updateList(); updateReel();
 }
-function switchState(s) { currentState = s; document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s)); update(); }
+function switchState(s) { currentState = s; document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + s)); updateList(); }
 init();
 </script>
 </body>
